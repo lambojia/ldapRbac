@@ -43,7 +43,7 @@ installs & configures sssd on a host and writes files w/in /etc/sudoers.d/ to al
         },
         {
           "name": "NOC",
-          "permissions": ["/usr/bin/tail"]
+          "permissions": ["/usr/bin/systemctl","/usr/bin/apt"]
         },
         {
           "name": "ADMIN",
