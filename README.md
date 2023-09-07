@@ -44,16 +44,20 @@ installs & configures sssd on a host and writes files w/in /etc/sudoers.d/ to al
         {
           "name": "NOC",
           "permissions": ["/usr/bin/tail"]
+        },
+        {
+          "name": "ADMIN",
+          "permissions": ["ALL"]
         }
       ],
       "groups": [
         {
           "name": "ldap_users",
-          "roles": ["OPERATOR"]
+          "roles": ["OPERATOR","NOC"]
         },
         {
           "name": "ldap_admins",
-          "roles": ["OPERATOR", "NOC"]
+          "roles": ["ADMIN"]
         }
       ],
       "exclude" : []
