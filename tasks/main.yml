@@ -1,0 +1,103 @@
+- assert:
+    that:
+      - json_policy is defined
+      - policy_exclude_group is iterable or policy_exclude_group is not defined
+
+- name: Load JSON file
+  set_fact:
+    policy: "{{ lookup('file', '{{json_policy}}') | from_json }}"
+
+- name: Set Variables
+  set_fact:
+    domain: "{{ policy.domain_info.domain }}"
+    cert: "{{ policy.domain_info.cert }}"
+    key: "{{ policy.domain_info.key }}"
+    uri: "{{ policy.domain_info.uri }}"
+    dn: "{{ ['dc='] | product( policy.domain_info.domain.split('.') ) | map('join') | join(',')}}"
+    filter: "{{ policy.groups | map(attribute='name') | difference ( policy_exclude_group | default(policy.exclude) ) }}"
+
+- name: Install Package Dependencies
+  apt:
+    pkg:
+     - sssd-ldap
+     - ldap-utils
+    state: latest
+    update_cache: yes
+  tags:
+    - install
+
+- name: Copy Ldap Client cert 
+  copy: 
+    src: "{{cert}}" 
+    dest:  /etc/sssd/
+    mode: 0600
+  register: cert
+  tags:
+    - install
+
+- name: Copy Ldap Client key 
+  copy: 
+    src: "{{key}}" 
+    dest:  /etc/sssd/
+    mode: 0600
+  register: key
+  tags:
+    - install
+
+- name: Write Cmnd_Alias definitions
+  blockinfile: 
+    create: true
+    mode: "u=rw,g=r,o=r"
+    dest:  /etc/sudoers.d/00-ldap-operator-roles
+    insertbefore: "BOF"
+    marker: "#{mark} Managed by Ansible"
+    block: |
+      {% for item in policy.roles -%}
+        Cmnd_Alias     {{item.name}} = {{ item.permissions | join(',') }}
+      {% endfor %}
+
+- name: Write sudoer group definitions
+  blockinfile: 
+    create: true
+    mode: "u=rw,g=r,o=r"
+    dest:  /etc/sudoers.d/01-ldap-operator-policies
+    insertbefore: "BOF"
+    marker: "#{mark} Managed by Ansible"
+    block: |
+      {% for item in policy.groups -%}
+        %{{item.name}} ALL=(ALL) NOPASSWD:{{ item.roles | join(',') }}
+      {% endfor %}  
+
+- name: Write SSSD conf
+  blockinfile: 
+    create: true
+    mode: 0600
+    dest: /etc/sssd/sssd.conf
+    marker: "#{mark} Managed by Ansible"
+    content: |
+      [sssd]
+      services = nss, pam
+      domains = {{domain}}
+
+      [domain/{{domain}}]
+      cache_credentials = true
+      ldap_tls_cert = {{cert.dest}}
+      ldap_tls_key = {{key.dest}}
+      ldap_uri = {{uri}}
+      access_provider = ldap
+      id_provider = ldap
+      auth_provider = ldap
+      ldap_schema = rfc2307bis
+      ldap_user_uuid = entryUUID
+      ldap_search_base = {{dn}}
+      ldap_access_filter = (|{% for it in filter %}(memberOf=cn={{ it }},ou=Groups,{{dn}}){{ loop.last | ternary('','') }}{% endfor %})
+      enumerate = false
+
+- name: Start & Enable sssd
+  service:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+  loop:
+    - sssd
+

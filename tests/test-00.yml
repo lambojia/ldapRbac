@@ -1,0 +1,7 @@
+---
+- hosts: devenv
+  become: yes
+  vars:
+    - json_policy: ../../sample-policy.json
+  roles:
+    - ldapRbac
