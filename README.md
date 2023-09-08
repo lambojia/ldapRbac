@@ -1,9 +1,10 @@
 ldapRbac
 =========
 
-installs & configures sssd on a host and writes files w/in /etc/sudoers.d/ to allow sudo access for defined binaries to defined groups.
+An ansible role the installs and configures sssd with role based access control.
+
 ---
-  **Group Access Control** is achieved thru the use of ldap_access_filter w/in /etc/sssd/sssd.conf as an ALLOW list.
+  **Group Authentication Control** is achieved thru the use of ldap_access_filter w/in /etc/sssd/sssd.conf as an ALLOW list, defined through a custom json object.
 
     [domain/example.com]
     ...
@@ -11,7 +12,7 @@ installs & configures sssd on a host and writes files w/in /etc/sudoers.d/ to al
     ldap_access_filter = (|(memberOf=cn=ldap_admins,ou=Groups,dc=example,dc=com))
     ...
 ---
-  **Sudo'er Access Control** is achived thru the creation of two configuration files (**00-ldap-operator-roles** & **00-ldap-operator-policies**) w/in /etc/sudoers.d/.
+  **Sudo'er Authorization Control** is achived thru the creation of two configuration files (**00-ldap-operator-roles** & **00-ldap-operator-policies**) w/in /etc/sudoers.d/.
 
     /etc/sudoers.d/00-ldap-operator-roles 
     ...
@@ -28,9 +29,9 @@ installs & configures sssd on a host and writes files w/in /etc/sudoers.d/ to al
     %ldap_admins ALL=(ALL) NOPASSWD:ADMIN
     ...
 ---
-  **Custom Json Policy** - the ansible role expects a custom json object that contains the ldap connection parameters & access control policies.
+  **Custom Json Object** - the ansible role expects a custom json object that contains the ldap connection parameters & access control policies.
 
-  **Policy syntax:**
+  **Object syntax:**
 
     {
       "domain_info": {
