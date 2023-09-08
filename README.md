@@ -87,7 +87,7 @@ N/A
 Example Playbook
 ----------------
 
-Deploy same policies accross hosts
+Uniform deployment accross hosts
 
     - hosts: devenv
       become: yes
@@ -96,15 +96,17 @@ Deploy same policies accross hosts
       roles:
         - ldapRbac
 
+---
+
 Deploy different policies accross hosts  through the inventory variable declaration
 
+    #playbook
     - hosts: devenv
       become: yes
       roles:
         - ldapRbac
-
----
-
+        
+    #inventory
     devenv:
       hosts:
         host01:
@@ -114,16 +116,19 @@ Deploy different policies accross hosts  through the inventory variable declarat
           ...
           json_policy: user-policy.json
 
-Deploy same policies accross the target hosts but exclude certain ldap groups thru the inventory variable declaration
+---
 
+Deploy same policies accross the target hosts but exclude certain ldap groups thru the inventory variable declaration
+    
+    #playbook
     - hosts: devenv
       become: yes
       vars:
         - json_policy: sample-policy.json
       roles:
         - ldapRbac
-  ---
   
+    #inventory 
     devenv:
       hosts:
         host01:
