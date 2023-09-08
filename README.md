@@ -2,30 +2,33 @@ ldapRbac
 =========
 
 installs & configures sssd on a host and writes files w/in /etc/sudoers.d/ to allow sudo access for defined binaries to defined groups.
-
+---
   **Group Access Control** is achieved thru the use of ldap_access_filter w/in /etc/sssd/sssd.conf as an ALLOW list.
 
     [domain/example.com]
     ...
-    _members of the ldap_admins group is granted sssd access_
+    #members of the ldap_admins group is granted sssd access
     ldap_access_filter = (|(memberOf=cn=ldap_admins,ou=Groups,dc=example,dc=com))
     ...
-
+---
   **Sudo'er Access Control** is achived thru the creation of two configuration files (**00-ldap-operator-roles** & **00-ldap-operator-policies**) w/in /etc/sudoers.d/.
 
     /etc/sudoers.d/00-ldap-operator-roles 
     ...
-    _sample config for allowing sudo command access for cat , nano & vi to the OPERATOR role:_
+    #sample config for allowing sudo command access for cat , nano & vi to the OPERATOR role & ALL Privileges to ADMIN
     Cmnd_Alias     OPERATOR = /usr/bin/cat,/usr/bin/nano,/usr/bin/vi
+    Cmnd_Alias     NOC = /usr/bin/systemctl,/usr/bin/apt
+    Cmnd_Alias     ADMIN = ALL
     ...
 
     /etc/sudoers.d/00-ldap-operator-policies
     ...
-    _allows ldap_admins to run sudo_
-    %ldap_admins ALL=(ALL) NOPASSWD:OPERATOR
+    #allows ldap_users to run sudo
+    %ldap_users ALL=(ALL) NOPASSWD:OPERATOR,NOC
+    %ldap_admins ALL=(ALL) NOPASSWD:ADMIN
     ...
-
-  **Custom Json Policy** - the ansible role expects a custom json policy that contains the ldap authentication parameters , access control defintions.
+---
+  **Custom Json Policy** - the ansible role expects a custom json object that contains the ldap connection parameters & access control policies.
 
   **Policy syntax:**
 
@@ -83,7 +86,7 @@ N/A
 Example Playbook
 ----------------
 
-Deploy same policies accross the target hosts
+Deploy same policies accross hosts
 
     - hosts: devenv
       become: yes
@@ -92,15 +95,14 @@ Deploy same policies accross the target hosts
       roles:
         - ldapRbac
 
-Deploy different policies accross the target hosts
-
+Deploy different policies accross hosts  through the inventory variable declaration
 
     - hosts: devenv
       become: yes
       roles:
         - ldapRbac
 
-inventory.yml
+---
 
     devenv:
       hosts:
@@ -111,7 +113,7 @@ inventory.yml
           ...
           json_policy: user-policy.json
 
-Deploy same policies accross the target hosts
+Deploy same policies accross the target hosts but exclude certain ldap groups thru the inventory variable declaration
 
     - hosts: devenv
       become: yes
@@ -119,9 +121,8 @@ Deploy same policies accross the target hosts
         - json_policy: sample-policy.json
       roles:
         - ldapRbac
-
-inventory.yml - the ldap_users group is removed from the ldap_filter for host01
-
+  ---
+  
     devenv:
       hosts:
         host01:
@@ -137,4 +138,4 @@ BSD
 Author Information
 ------------------
 
-N/A
+alef
