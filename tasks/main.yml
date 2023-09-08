@@ -1,7 +1,7 @@
 - assert:
     that:
       - json_policy is defined
-      - policy_exclude_group is iterable or policy_exclude_group is not defined
+      - deny_groups is iterable or deny_groups is not defined
 
 - name: Load JSON file
   set_fact:
@@ -10,11 +10,11 @@
 - name: Set Variables
   set_fact:
     domain: "{{ policy.domain_info.domain }}"
-    cert: "{{ policy.domain_info.cert }}"
+    crt: "{{ policy.domain_info.crt }}"
     key: "{{ policy.domain_info.key }}"
     uri: "{{ policy.domain_info.uri }}"
     dn: "{{ ['dc='] | product( policy.domain_info.domain.split('.') ) | map('join') | join(',')}}"
-    filter: "{{ policy.groups | map(attribute='name') | difference ( policy_exclude_group | default(policy.exclude) ) }}"
+    allowed_groups: "{{ policy.groups | map(attribute='name') | difference ( deny_groups | default(policy.exclude) ) | join(',') }}"
 
 - name: Install Package Dependencies
   apt:
@@ -26,77 +26,36 @@
   tags:
     - install
 
-- name: Copy Ldap Client cert 
+- name: Copy file Dependencies to host
   copy: 
-    src: "{{cert}}" 
+    src: "{{ item }}"
     dest:  /etc/sssd/
-    mode: 0600
-  register: cert
+    mode: 0400
+  loop:
+    - "{{ crt }}" 
+    - "{{ key }}" 
+  register: files
   tags:
     - install
 
-- name: Copy Ldap Client key 
-  copy: 
-    src: "{{key}}" 
-    dest:  /etc/sssd/
+- name: Write Configurations from templates
+  template:
+    src: "{{ item.src }}" 
+    dest: "{{ item.dest }}" 
+    backup: yes
     mode: 0600
-  register: key
-  tags:
-    - install
+  loop:
+    - src: sssd.conf.j2
+      dest: /etc/sssd/sssd.conf
+    - src: 00-ldap-operator-roles.j2
+      dest: /etc/sudoers.d/00-ldap-operator-roles
+    - src: 01-ldap-operator-policies.j2
+      dest: /etc/sudoers.d/01-ldap-operator-policies
 
-- name: Write Cmnd_Alias definitions
-  blockinfile: 
-    create: true
-    mode: "u=rw,g=r,o=r"
-    dest:  /etc/sudoers.d/00-ldap-operator-roles
-    insertbefore: "BOF"
-    marker: "#{mark} Managed by Ansible"
-    block: |
-      {% for item in policy.roles -%}
-        Cmnd_Alias     {{item.name}} = {{ item.permissions | join(',') }}
-      {% endfor %}
-
-- name: Write sudoer group definitions
-  blockinfile: 
-    create: true
-    mode: "u=rw,g=r,o=r"
-    dest:  /etc/sudoers.d/01-ldap-operator-policies
-    insertbefore: "BOF"
-    marker: "#{mark} Managed by Ansible"
-    block: |
-      {% for item in policy.groups -%}
-        %{{item.name}} ALL=(ALL) NOPASSWD:{{ item.roles | join(',') }}
-      {% endfor %}  
-
-- name: Write SSSD conf
-  blockinfile: 
-    create: true
-    mode: 0600
-    dest: /etc/sssd/sssd.conf
-    marker: "#{mark} Managed by Ansible"
-    content: |
-      [sssd]
-      services = nss, pam
-      domains = {{domain}}
-
-      [domain/{{domain}}]
-      cache_credentials = true
-      ldap_tls_cert = {{cert.dest}}
-      ldap_tls_key = {{key.dest}}
-      ldap_uri = {{uri}}
-      access_provider = ldap
-      id_provider = ldap
-      auth_provider = ldap
-      ldap_schema = rfc2307bis
-      ldap_user_uuid = entryUUID
-      ldap_search_base = {{dn}}
-      ldap_access_filter = (|{% for it in filter %}(memberOf=cn={{ it }},ou=Groups,{{dn}}){{ loop.last | ternary('','') }}{% endfor %})
-      enumerate = false
-
-- name: Start & Enable sssd
+- name: Start & Enable Services
   service:
     name: "{{ item }}"
-    state: started
+    state: restarted
     enabled: true
   loop:
     - sssd

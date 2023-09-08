@@ -1,0 +1,3 @@
+{% for item in policy.groups -%}
+%{{item.name}} ALL=(ALL) NOPASSWD:{{ item.roles | join(',') }}
+{% endfor %}

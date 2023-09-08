@@ -1,0 +1,27 @@
+[sssd]
+services = pam
+domains = {{domain}}
+config_file_version = 2
+
+[domain/{{domain}}]
+enumerate = false
+cache_credentials = true
+ldap_schema = rfc2307bis
+ldap_user_uuid = entryUUID
+
+ldap_tls_cert = {{files.results[0].dest}}
+ldap_tls_key = {{files.results[1].dest}}
+ldap_uri = {{uri}}
+ldap_search_base = {{dn}}
+
+id_provider = ldap
+access_provider = simple
+
+#ou whitelisting
+simple_allow_groups = {{allowed_groups}}
+
+#sets default bash for ldap user to rbash
+override_shell = /usr/bin/rbash
+
+#work around of ldap gid not found in /etc/group file
+override_gid = 100

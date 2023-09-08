@@ -4,12 +4,12 @@ ldapRbac
 An ansible role the installs and configures sssd with role based access control.
 
 ---
-  **Group Authentication Control** is achieved thru the use of ldap_access_filter w/in /etc/sssd/sssd.conf as an ALLOW list, defined through a custom json object.
+  **Group Authentication Control** is achieved thru the use of simple_allow_groups w/in /etc/sssd/sssd.conf as an ALLOW list, defined through a custom json object.
 
     [domain/example.com]
     ...
     #members of the ldap_admins group is granted sssd access
-    ldap_access_filter = (|(memberOf=cn=ldap_admins,ou=Groups,dc=example,dc=com))
+    simple_allow_groups = ldap_admins
     ...
 ---
   **Sudo'er Authorization Control** is achived thru the creation of two configuration files (**00-ldap-operator-roles** & **00-ldap-operator-policies**) w/in /etc/sudoers.d/.
@@ -36,7 +36,7 @@ An ansible role the installs and configures sssd with role based access control.
     {
       "domain_info": {
         "domain": "example.com",
-        "cert": (local path to the ldaps certificate),
+        "crt": (local path to the ldaps certificate),
         "key": (local path to the ldaps certificate key),
         "uri": "ldaps://ldap.google.com:636"
       },

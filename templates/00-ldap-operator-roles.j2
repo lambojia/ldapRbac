@@ -1,0 +1,3 @@
+{% for item in policy.roles -%}
+Cmnd_Alias     {{item.name}} = {{ item.permissions | join(',') }}
+{% endfor %}
