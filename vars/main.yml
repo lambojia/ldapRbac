@@ -1,1 +1,1 @@
-#policy_exclude_group: []
+pubkeyAttribute: "ldapPublicKey"

@@ -42,8 +42,8 @@
   template:
     src: "{{ item.src }}" 
     dest: "{{ item.dest }}" 
+    mode: "{{ item.mode | default(400)}}" 
     backup: yes
-    mode: 0600
   loop:
     - src: sssd.conf.j2
       dest: /etc/sssd/sssd.conf
@@ -51,6 +51,11 @@
       dest: /etc/sudoers.d/00-ldap-operator-roles
     - src: 01-ldap-operator-policies.j2
       dest: /etc/sudoers.d/01-ldap-operator-policies
+    - src: get-ldaps-pubkey.sh.j2
+      dest: /etc/sssd/get-ldaps-pubkey.sh
+      mode: 500
+    - src: 02-sshd-enable-ldap-pki.conf.j2
+      dest: /etc/ssh/sshd_config.d/02-sshd-enable-ldap-pki.conf
 
 - name: Start & Enable Services
   service:
@@ -59,4 +64,5 @@
     enabled: true
   loop:
     - sssd
+    - sshd
 

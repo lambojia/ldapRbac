@@ -1,0 +1,5 @@
+#!/bin/bash
+LDAPTLS_CERT="{{files.results[0].dest}}" \
+LDAPTLS_KEY="{{files.results[1].dest}}" \
+ldapsearch -Q -H "{{uri}}" -b "{{dn}}" "(uid=${1})" "{{pubkeyAttribute}}"  | \
+sed -n '/^ /{H;d};/{{pubkeyAttribute}}:/x;$g;s/\n *//g;s/{{pubkeyAttribute}}: //gp' | tr -d '\n' | base64 -d
