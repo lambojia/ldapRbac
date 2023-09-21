@@ -1,7 +1,10 @@
 ldapRbac
 =========
 
-An ansible role the installs and configures sssd with role based access control.
+An ansible role that installs and configures sssd with role based access control.
+
+---
+  **Authentication** supports private key or password authentication.
 
 ---
   **Group Authentication Control** is achieved thru the use of simple_allow_groups w/in /etc/sssd/sssd.conf as an ALLOW list, defined through a custom json object.
