@@ -38,6 +38,11 @@
   tags:
     - install
 
+- name: Enable Pam User Directory Creation
+  command: pam-auth-update --force --enable mkhomedir
+  tags:
+    - install
+
 - name: Write Configurations from templates
   template:
     src: "{{ item.src }}" 
